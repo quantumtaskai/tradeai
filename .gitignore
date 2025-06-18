@@ -28,6 +28,7 @@ Desktop.ini
 .vscode/
 .idea/
 *.code-workspace
+.claude/
 
 # === Node.js ===
 node_modules/
