@@ -1,0 +1,231 @@
+{
+  "name": "20250617_trading victory",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "trading",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "989194f5-ffcc-4e80-8e6f-7a6517cf6b4b",
+      "name": "Webhook",
+      "webhookId": "af87c7cc-1c08-49dd-b1a4-09d450d52b51"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.query }}",
+        "messages": {
+          "messageValues": [
+            {
+              "type": "AIMessagePromptTemplate",
+              "message": "=// UPDATED LLM PROMPT - REPLACE YOUR \"Basic LLM Chain\" MESSAGE CONTENT\n\nYou are a query parser for a trade database. You MUST return ONLY valid JSON, no comments or explanations.\n\n🔥 PRIORITY 1: CONTACT INFORMATION SEARCHES (ALWAYS SEARCH ALL TABLES)\n- Email searches: ANY query with \"@\" symbol → {\"table\": \"all\", \"filters\": [{\"field\": \"mail_id\", \"operator\": \"ilike\", \"value\": \"%EMAIL%\"}]}\n- Phone searches: ANY query with phone numbers → {\"table\": \"all\", \"filters\": [{\"field\": \"phone_number\", \"operator\": \"ilike\", \"value\": \"%PHONE%\"}]}\n- Website searches: ANY query with domains/URLs → {\"table\": \"all\", \"filters\": [{\"field\": \"website\", \"operator\": \"ilike\", \"value\": \"%WEBSITE%\"}]}\n\nDATABASE TABLES:\n- buyer: 348 companies (buyer, country, category, brands, phone_number, mail_id, website)\n- seller: 84 companies (seller, country, category, brands, phone_number, mail_id, website)  \n- gulfood: 30 companies (company_name, address, phone_number, mail_id, website)\n\nDATA CORRECTIONS:\n- \"Uniliver\" → \"Unilever\"\n- \"Bahiran\" → \"Bahrain\" \n- \"Dubai\" or \"UAE\" → \"Dubai, United Arab Emirates\"\n- \"Czechia\" → \"Czech Republic\"\n- \"FMCG\" → \"FMCG\"\n- \"Cosmetics\" → \"Cosmetics product\"\n\nFIELD MAPPING:\n- country searches → \"country\" field (buyer/seller) or \"address\" field (gulfood)\n- brand searches → \"brands\" field  \n- category searches → \"category\" field\n- phone searches → \"phone_number\" field (ALWAYS use table: \"all\")\n- email searches → \"mail_id\" field (ALWAYS use table: \"all\")\n- website searches → \"website\" field (ALWAYS use table: \"all\")\n\nTABLE SELECTION:\n- \"buyer\" for buying/purchasing queries\n- \"seller\" for selling/supplier queries\n- \"gulfood\" for gulfood companies\n- \"all\" for general searches AND ALL CONTACT SEARCHES\n\n🚨 CRITICAL CONTACT SEARCH EXAMPLES:\n\nInput: \"find Export@2brother4olives.com\"\nOutput: {\"table\": \"all\", \"filters\": [{\"field\": \"mail_id\", \"operator\": \"ilike\", \"value\": \"%Export@2brother4olives.com%\"}], \"logic\": \"AND\", \"confidence\": 0.95, \"interpretation\": \"Email search across all tables\"}\n\nInput: \"info@company.com\"\nOutput: {\"table\": \"all\", \"filters\": [{\"field\": \"mail_id\", \"operator\": \"ilike\", \"value\": \"%info@company.com%\"}], \"logic\": \"AND\", \"confidence\": 0.95, \"interpretation\": \"Email search across all tables\"}\n\nInput: \"+1-555-123-4567\"\nOutput: {\"table\": \"all\", \"filters\": [{\"field\": \"phone_number\", \"operator\": \"ilike\", \"value\": \"%1-555-123-4567%\"}], \"logic\": \"AND\", \"confidence\": 0.92, \"interpretation\": \"Phone search across all tables\"}\n\nInput: \"www.company.com\"\nOutput: {\"table\": \"all\", \"filters\": [{\"field\": \"website\", \"operator\": \"ilike\", \"value\": \"%company.com%\"}], \"logic\": \"AND\", \"confidence\": 0.90, \"interpretation\": \"Website search across all tables\"}\n\nOTHER EXAMPLES:\n\nInput: \"Indian FMCG companies\"\nOutput: {\"table\": \"all\", \"filters\": [{\"field\": \"country\", \"operator\": \"ilike\", \"value\": \"%India%\"}, {\"field\": \"category\", \"operator\": \"ilike\", \"value\": \"%FMCG%\"}], \"logic\": \"AND\", \"confidence\": 0.95, \"interpretation\": \"Country and category search\"}\n\nInput: \"Unilever buyers\"  \nOutput: {\"table\": \"buyer\", \"filters\": [{\"field\": \"brands\", \"operator\": \"ilike\", \"value\": \"%Unilever%\"}], \"logic\": \"AND\", \"confidence\": 0.92, \"interpretation\": \"Brand search in buyers\"}\n\n🔥 DETECTION RULES:\n1. If query contains \"@\" → Email search → table: \"all\"\n2. If query contains phone patterns → Phone search → table: \"all\"  \n3. If query contains .com/.co/.org/www → Website search → table: \"all\"\n4. Only then check for company/product/country searches\n\nCRITICAL: Return ONLY the JSON object, nothing else. No explanations, no comments, no markdown formatting."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        440,
+        0
+      ],
+      "id": "73d879d5-296f-4b7a-b85c-6de2326e837c",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        528,
+        220
+      ],
+      "id": "626cb783-eb9a-4808-b7cd-65480ad456ad",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "Drcj0dHuUOGLptw5",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// COMPLETE FIX FOR YOUR N8N \"Enhanced AI Query Parser\" CODE NODE\n// UPDATE ALL CONTACT-BASED SEARCHES TO USE \"table\": \"all\"\n\n// 📧 EMAIL SEARCH FIX\nfunction detectEmailSearch(query) {\n  const emailPattern = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,})/;\n  const emailMatch = query.match(emailPattern);\n  \n  if (emailMatch) {\n    return {\n      success: true,\n      table: \"all\", // ✅ Search ALL tables for emails\n      filters: [\n        { field: \"mail_id\", operator: \"ilike\", value: `%${emailMatch[1]}%` }\n      ],\n      logic: \"AND\",\n      confidence: 0.95,\n      interpretation: \"Email search across all tables\",\n      autoCorrections: [],\n      originalQuery: query,\n      source: \"enhanced_ai_parser\",\n      timestamp: new Date().toISOString(),\n      queryType: \"contact_search\",\n      contactType: \"email\"\n    };\n  }\n  return null;\n}\n\n// 📞 PHONE NUMBER SEARCH FIX\nfunction detectPhoneSearch(query) {\n  // Enhanced phone patterns\n  const phonePatterns = [\n    /(\\+?\\d{1,4}[-.\\s]?\\d{3,4}[-.\\s]?\\d{3,4}[-.\\s]?\\d{3,4})/g, // International\n    /(\\d{3}[-.\\s]?\\d{3}[-.\\s]?\\d{4})/g, // US format\n    /(\\+?\\d{10,15})/g, // Simple digits\n    /(\\(\\d{3}\\)\\s?\\d{3}[-.\\s]?\\d{4})/g // (123) 456-7890\n  ];\n  \n  for (let pattern of phonePatterns) {\n    const phoneMatch = query.match(pattern);\n    if (phoneMatch) {\n      const cleanPhone = phoneMatch[0].replace(/[^\\d\\+]/g, '');\n      if (cleanPhone.length >= 8) { // Valid phone length\n        return {\n          success: true,\n          table: \"all\", // ✅ Search ALL tables for phone numbers\n          filters: [\n            { field: \"phone_number\", operator: \"ilike\", value: `%${cleanPhone}%` },\n            // Also search for original format in case formatting differs\n            { field: \"phone_number\", operator: \"ilike\", value: `%${phoneMatch[0]}%` }\n          ],\n          logic: \"OR\", // Either clean or original format\n          confidence: 0.90,\n          interpretation: \"Phone number search across all tables\",\n          autoCorrections: [],\n          originalQuery: query,\n          source: \"enhanced_ai_parser\",\n          timestamp: new Date().toISOString(),\n          queryType: \"contact_search\",\n          contactType: \"phone\"\n        };\n      }\n    }\n  }\n  return null;\n}\n\n// 🌐 WEBSITE SEARCH FIX\nfunction detectWebsiteSearch(query) {\n  const websitePatterns = [\n    /(https?:\\/\\/[^\\s]+)/g, // Full URLs\n    /(www\\.[^\\s]+\\.[a-z]{2,})/gi, // www.example.com\n    /([a-zA-Z0-9-]+\\.[a-z]{2,}(?:\\.[a-z]{2,})?)/g // domain.com or domain.co.uk\n  ];\n  \n  for (let pattern of websitePatterns) {\n    const websiteMatch = query.match(pattern);\n    if (websiteMatch && !websiteMatch[0].includes('@')) { // Not an email\n      let website = websiteMatch[0];\n      \n      // Clean up the website\n      website = website.replace(/^https?:\\/\\//, '').replace(/^www\\./, '');\n      \n      return {\n        success: true,\n        table: \"all\", // ✅ Search ALL tables for websites\n        filters: [\n          { field: \"website\", operator: \"ilike\", value: `%${website}%` },\n          { field: \"website\", operator: \"ilike\", value: `%www.${website}%` },\n          { field: \"website\", operator: \"ilike\", value: `%https://${website}%` },\n          { field: \"website\", operator: \"ilike\", value: `%http://${website}%` }\n        ],\n        logic: \"OR\", // Any of these website formats\n        confidence: 0.88,\n        interpretation: \"Website search across all tables\",\n        autoCorrections: [],\n        originalQuery: query,\n        source: \"enhanced_ai_parser\",\n        timestamp: new Date().toISOString(),\n        queryType: \"contact_search\",\n        contactType: \"website\"\n      };\n    }\n  }\n  return null;\n}\n\n// 🔍 MAIN DETECTION FUNCTION - ADD THIS TO YOUR MAIN PARSING LOGIC\nfunction detectContactSearches(query) {\n  // Check for email first (highest priority)\n  const emailResult = detectEmailSearch(query);\n  if (emailResult) return emailResult;\n  \n  // Check for phone number\n  const phoneResult = detectPhoneSearch(query);\n  if (phoneResult) return phoneResult;\n  \n  // Check for website\n  const websiteResult = detectWebsiteSearch(query);\n  if (websiteResult) return websiteResult;\n  \n  return null; // No contact search detected\n}\n\n// 🔗 INTEGRATION - ADD THIS AT THE TOP OF YOUR MAIN PARSING FUNCTION\nfunction parseQuery(query) {\n  // FIRST: Check for contact-based searches (email, phone, website)\n  const contactSearch = detectContactSearches(query);\n  if (contactSearch) {\n    return contactSearch;\n  }\n  \n  // THEN: Continue with your existing AI parsing logic...\n  // (rest of your existing code)\n}\n// IMPROVED PARSE RESPONSE - BETTER JSON EXTRACTION\n// Replace your Parse Response node with this code\n\ntry {\n  const inputData = $input.first().json;\n  let aiResponse = inputData.text || inputData.content || inputData.response;\n  \n  if (!aiResponse) {\n    throw new Error('No AI response found');\n  }\n  \n  // SMART CACHING SYSTEM\n  const originalQuery = $('Webhook').first().json.body?.query || '';\n  const cacheKey = JSON.stringify({\n    query: originalQuery.toLowerCase().trim()\n  });\n\n  // Initialize global cache if not exists\n  if (typeof global.tradeQueryCache === 'undefined') {\n    global.tradeQueryCache = new Map();\n  }\n\n  // Check cache first (5-minute TTL)\n  const cached = global.tradeQueryCache.get(cacheKey);\n  if (cached && Date.now() - cached.timestamp < 300000) { // 5 minutes\n    console.log('Cache HIT for query:', originalQuery);\n    \n    return [{\n      json: {\n        ...cached.result,\n        source: 'cache',\n        cached: true,\n        cacheAge: Math.round((Date.now() - cached.timestamp) / 1000) + 's',\n        timestamp: new Date().toISOString()\n      }\n    }];\n  }\n\n  console.log('Cache MISS for query:', originalQuery);\n  console.log('Raw AI Response:', aiResponse);\n\n  // IMPROVED JSON EXTRACTION\n  let cleanResponse = aiResponse.trim();\n  \n  // Remove common prefixes that LLMs add\n  cleanResponse = cleanResponse.replace(/^(Here's the JSON:|Output:|Result:|\\s*)/i, '');\n  \n  // Remove markdown code blocks\n  cleanResponse = cleanResponse.replace(/```json\\s*/i, '').replace(/```\\s*$/, '');\n  \n  // Remove comments and explanations before/after JSON\n  cleanResponse = cleanResponse.replace(/^[^{]*(?=\\{)/, '').replace(/\\}[^}]*$/, '}');\n  \n  // Remove any trailing commas before closing braces\n  cleanResponse = cleanResponse.replace(/,\\s*}/g, '}').replace(/,\\s*]/g, ']');\n  \n  console.log('Cleaned Response:', cleanResponse);\n  \n  // Try to parse JSON\n  let parsed;\n  try {\n    parsed = JSON.parse(cleanResponse);\n  } catch (jsonError) {\n    console.log('JSON Parse Error:', jsonError.message);\n    \n    // Try to extract JSON using regex as fallback\n    const jsonMatch = cleanResponse.match(/\\{.*\\}/s);\n    if (jsonMatch) {\n      try {\n        parsed = JSON.parse(jsonMatch[0]);\n        console.log('Successfully extracted JSON using regex');\n      } catch (regexError) {\n        throw new Error(`Failed to parse JSON: ${jsonError.message}`);\n      }\n    } else {\n      throw new Error('No valid JSON found in response');\n    }\n  }\n  \n  console.log('Parsed JSON:', parsed);\n  \n  // ENHANCED DATA-SPECIFIC STANDARDIZATION\n  const yourCountryMapping = {\n    'dubai': 'Dubai, United Arab Emirates',\n    'uae': 'Dubai, United Arab Emirates',\n    'united arab emirates': 'Dubai, United Arab Emirates',\n    'czechia': 'Czech Republic',\n    'czech': 'Czech Republic', \n    'bahiran': 'Bahrain',\n    'combodia': 'Cambodia',\n    'europ': 'Europe',\n    'usa': 'United States',\n    'america': 'United States',\n    'uk': 'United Kingdom',\n    'britain': 'United Kingdom',\n    'england': 'United Kingdom',\n    'india': 'India',\n    'china': 'China',\n    'singapore': 'Singapore',\n    'germany': 'Germany',\n    'france': 'France'\n  };\n  \n  const yourCategoryMapping = {\n    'fmcg': 'FMCG',\n    'fast moving consumer goods': 'FMCG',\n    'food': 'Food and Beverage',\n    'food and beverage': 'Food and Beverage',\n    'confectionery': 'Confectionery',\n    'cosmetics': 'Cosmetics product',\n    'beauty': 'Cosmetics product',\n    'pharma': 'Pharmacutical',\n    'pharmaceutical': 'Pharmacutical'\n  };\n  \n  const yourBrandMapping = {\n    'uniliver': 'Unilever',\n    'unilever': 'Unilever',\n    'p&g': 'P&G',\n    'p & g': 'P & G',\n    'nestle': 'Nestle',\n    'colgate': 'Colgate-Palmolive',\n    'ferrero': 'Ferrero',\n    'fererro': 'Ferrero'\n  };\n  \n  // Validate table\n  const validTables = ['buyer', 'seller', 'gulfood', 'all'];\n  const finalTable = validTables.includes(parsed.table) ? parsed.table : 'all';\n  \n  // Process filters with corrections\n  const autoCorrections = [];\n  const processedFilters = (parsed.filters || []).map(filter => {\n    let originalValue = filter.value.replace(/^%+|%+$/g, '').toLowerCase().trim();\n    let cleanValue = originalValue;\n    \n    // Apply standardization\n    if (filter.field === 'country' && yourCountryMapping[cleanValue]) {\n      autoCorrections.push(`${originalValue} → ${yourCountryMapping[cleanValue]}`);\n      cleanValue = yourCountryMapping[cleanValue];\n    } else if (filter.field === 'category' && yourCategoryMapping[cleanValue]) {\n      autoCorrections.push(`${originalValue} → ${yourCategoryMapping[cleanValue]}`);\n      cleanValue = yourCategoryMapping[cleanValue];\n    } else if (filter.field === 'brands') {\n      const brandKey = Object.keys(yourBrandMapping).find(key => \n        cleanValue.includes(key)\n      );\n      if (brandKey) {\n        autoCorrections.push(`${originalValue} → ${yourBrandMapping[brandKey]}`);\n        cleanValue = yourBrandMapping[brandKey];\n      }\n    }\n    \n    return {\n      field: filter.field,\n      operator: filter.operator || 'ilike',\n      value: `%${cleanValue}%`\n    };\n  });\n  \n  // Create final result\n  const finalResult = {\n    success: true,\n    table: finalTable,\n    filters: processedFilters,\n    logic: parsed.logic || 'AND',\n    confidence: parsed.confidence || 0.8,\n    interpretation: parsed.interpretation || 'Query processed successfully',\n    autoCorrections: autoCorrections,\n    originalQuery: originalQuery,\n    source: 'enhanced_ai_parser',\n    timestamp: new Date().toISOString()\n  };\n\n  // Cache successful results\n  global.tradeQueryCache.set(cacheKey, {\n    result: finalResult,\n    timestamp: Date.now()\n  });\n  \n  // Clean old cache entries\n  if (global.tradeQueryCache.size > 100) {\n    const oldestKey = global.tradeQueryCache.keys().next().value;\n    global.tradeQueryCache.delete(oldestKey);\n  }\n  \n  console.log('Successfully processed query:', finalResult);\n\n  return [{\n    json: finalResult\n  }];\n  \n} catch (error) {\n  console.log('Parse error:', error.message);\n  \n  // SMART FALLBACK\n  const originalQuery = $('Webhook').first().json.body?.query || '';\n  const fallbackFilters = [];\n  \n  // Simple pattern detection\n  if (originalQuery.toLowerCase().includes('india')) {\n    fallbackFilters.push({field: 'country', operator: 'ilike', value: '%India%'});\n  }\n  if (originalQuery.toLowerCase().includes('fmcg')) {\n    fallbackFilters.push({field: 'category', operator: 'ilike', value: '%FMCG%'});\n  }\n  if (originalQuery.toLowerCase().includes('unilever') || originalQuery.toLowerCase().includes('uniliver')) {\n    fallbackFilters.push({field: 'brands', operator: 'ilike', value: '%Unilever%'});\n  }\n  \n  // Phone pattern\n  const phoneMatch = originalQuery.match(/[\\d\\s\\-\\(\\)\\+]{8,}/);\n  if (phoneMatch) {\n    fallbackFilters.push({field: 'phone_number', operator: 'ilike', value: `%${phoneMatch[0].trim()}%`});\n  }\n  \n  // Email pattern\n  const emailMatch = originalQuery.match(/@[\\w\\.-]+|gmail|yahoo/i);\n  if (emailMatch) {\n    fallbackFilters.push({field: 'mail_id', operator: 'ilike', value: `%${emailMatch[0]}%`});\n  }\n  \n  return [{\n    json: {\n      success: fallbackFilters.length > 0,\n      error: error.message,\n      table: 'all',\n      filters: fallbackFilters,\n      logic: 'AND',\n      confidence: 0.6,\n      interpretation: 'Fallback pattern matching used',\n      originalQuery: originalQuery,\n      source: 'fallback_parser',\n      timestamp: new Date().toISOString()\n    }\n  }];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        816,
+        0
+      ],
+      "id": "8566bff3-4b06-48d8-a591-62829e6a9f3b",
+      "name": "Parse Response"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1020,
+        0
+      ],
+      "id": "17dc672e-62b4-4771-94ad-f6573c85db5d",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        360
+      ],
+      "id": "4407b0d6-57ac-465f-a11a-ae8c2ba3b6da",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "kZ5UWLXDWB2Em4r6",
+          "name": "OpenAi account testing"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// FIXED SCHEMA DETECTION CODE FOR n8n\n// Copy this exact code into your \"Schema Detection\" Code node\n\n// Get the original query from the webhook\nconst originalQuery = $input.first().json.body.query;\n\n// 1. Dynamic schema and record count detection\nconst getCurrentDatabaseInfo = () => {\n  // Current known schema (expandable for future tables)\n  const schemas = {\n    buyer: {\n      fields: ['buyer', 'country', 'category', 'brands', 'phone_number', 'mail_id', 'website'],\n      recordCount: 348, // Update this periodically or connect to real count\n      lastUpdated: '2024-12-28'\n    },\n    seller: {\n      fields: ['seller', 'country', 'category', 'brands', 'phone_number', 'mail_id', 'website'], \n      recordCount: 84,\n      lastUpdated: '2024-12-28'\n    },\n    gulfood: {\n      fields: ['company_name', 'address', 'phone_number', 'mail_id', 'website'],\n      recordCount: 30,\n      lastUpdated: '2024-12-28'\n    }\n  };\n  \n  const totalRecords = Object.values(schemas).reduce((sum, table) => sum + table.recordCount, 0);\n  \n  // Determine current scale\n  let scale, recommendations;\n  if (totalRecords < 2000) {\n    scale = 'small';\n    recommendations = ['Monitor growth', 'Current LLM approach is perfect'];\n  } else if (totalRecords < 10000) {\n    scale = 'medium';\n    recommendations = ['Add caching', 'Create database indexes'];\n  } else if (totalRecords < 50000) {\n    scale = 'large';\n    recommendations = ['Consider Elasticsearch', 'Implement pagination'];\n  } else {\n    scale = 'enterprise';\n    recommendations = ['Distributed architecture required', 'Enterprise scaling needed'];\n  }\n  \n  return {\n    schemas: schemas,\n    totalRecords: totalRecords,\n    scale: scale,\n    recommendations: recommendations,\n    detectedAt: new Date().toISOString()\n  };\n};\n\n// 2. Query complexity analysis\nconst analyzeQueryComplexity = (query) => {\n  const complexity = {\n    wordCount: query.split(' ').length,\n    hasPhone: /[\\+\\d\\(\\)\\-\\.\\s]{8,}/.test(query),\n    hasEmail: /@[\\w\\.-]+/.test(query),\n    hasMultipleFilters: /\\s(and|or|with)\\s/i.test(query),\n    hasNegation: /\\s(not|except|without)\\s/i.test(query),\n    estimatedFilters: Math.min(query.split(/\\s(and|or|with)\\s/i).length, 5)\n  };\n  \n  let complexityScore = 0;\n  complexityScore += complexity.wordCount * 0.1;\n  complexityScore += complexity.hasPhone ? 0.2 : 0;\n  complexityScore += complexity.hasEmail ? 0.2 : 0;\n  complexityScore += complexity.hasMultipleFilters ? 0.3 : 0;\n  complexityScore += complexity.hasNegation ? 0.3 : 0;\n  \n  complexity.score = Math.min(complexityScore, 1.0);\n  complexity.level = complexity.score < 0.3 ? 'simple' : complexity.score < 0.7 ? 'medium' : 'complex';\n  \n  return complexity;\n};\n\n// 3. Generate enhanced context for LLM\nconst databaseInfo = getCurrentDatabaseInfo();\nconst queryComplexity = analyzeQueryComplexity(originalQuery);\n\nconst enhancedContext = {\n  query: originalQuery,\n  database: databaseInfo,\n  complexity: queryComplexity,\n  processingHints: {\n    scale: databaseInfo.scale,\n    allowComplexQueries: databaseInfo.scale === 'small',\n    suggestPagination: databaseInfo.scale !== 'small',\n    recommendCaching: databaseInfo.totalRecords > 1000\n  }\n};\n\nconsole.log('Schema Detection Results:', enhancedContext);\n\n// 4. IMPORTANT: Return in the correct n8n format\nreturn [{\n  json: {\n    query: originalQuery,\n    enhancedContext: enhancedContext,\n    // Also pass through the original body for downstream nodes\n    body: $input.first().json.body\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "bc297219-307d-4310-af1e-453347a2ad82",
+      "name": "DYNAMIC SCHEMA DETECTION"
+    },
+    {
+      "parameters": {
+        "jsCode": "// COMPLETE PERFORMANCE MONITOR - COPY & PASTE READY\n// Replace your entire \"Performance Monitor\" node with this code\n\ntry {\n  // Safely get the performance data from the previous node\n  const performanceData = $input.first()?.json || {};\n  const originalQuery = performanceData.originalQuery || \n                       $('Webhook').first()?.json?.body?.query || \n                       'unknown';\n\n  // Initialize global performance tracking with error handling\n  if (typeof global.performanceMetrics === 'undefined') {\n    global.performanceMetrics = {\n      queries: [],\n      dailyStats: {},\n      lastCleanup: Date.now()\n    };\n  }\n\n  // Record this query's performance\n  const queryMetric = {\n    query: originalQuery,\n    success: performanceData.success !== false,\n    cached: performanceData.cached === true,\n    filters: Array.isArray(performanceData.filters) ? performanceData.filters.length : 0,\n    table: performanceData.table || 'unknown',\n    confidence: performanceData.confidence || 0,\n    timestamp: Date.now(),\n    date: new Date().toISOString().split('T')[0]\n  };\n\n  global.performanceMetrics.queries.push(queryMetric);\n\n  // Update daily stats\n  const today = queryMetric.date;\n  if (!global.performanceMetrics.dailyStats[today]) {\n    global.performanceMetrics.dailyStats[today] = {\n      totalQueries: 0,\n      successfulQueries: 0,\n      cachedQueries: 0,\n      popularTables: {}\n    };\n  }\n\n  const todayStats = global.performanceMetrics.dailyStats[today];\n  todayStats.totalQueries++;\n  if (queryMetric.success) todayStats.successfulQueries++;\n  if (queryMetric.cached) todayStats.cachedQueries++;\n\n  // Track popular tables\n  const tableCount = todayStats.popularTables[queryMetric.table] || 0;\n  todayStats.popularTables[queryMetric.table] = tableCount + 1;\n\n  // Cleanup old data (keep last 30 days)\n  const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);\n  if (Date.now() - global.performanceMetrics.lastCleanup > 86400000) {\n    global.performanceMetrics.queries = global.performanceMetrics.queries\n      .filter(q => q.timestamp > thirtyDaysAgo);\n    global.performanceMetrics.lastCleanup = Date.now();\n  }\n\n  // Generate performance summary\n  const last24Hours = global.performanceMetrics.queries\n    .filter(q => q.timestamp > Date.now() - 86400000);\n\n  const performanceSummary = {\n    today: {\n      queries: todayStats.totalQueries,\n      successRate: todayStats.totalQueries > 0 ? \n        Math.round((todayStats.successfulQueries / todayStats.totalQueries) * 100) + '%' : '0%',\n      cacheHitRate: todayStats.totalQueries > 0 ?\n        Math.round((todayStats.cachedQueries / todayStats.totalQueries) * 100) + '%' : '0%',\n      popularTables: todayStats.popularTables\n    },\n    last24h: {\n      totalQueries: last24Hours.length,\n      averageConfidence: last24Hours.length > 0 ?\n        Math.round(last24Hours.reduce((sum, q) => sum + (q.confidence || 0), 0) / last24Hours.length * 100) / 100 : 0,\n      successRate: last24Hours.length > 0 ?\n        Math.round((last24Hours.filter(q => q.success).length / last24Hours.length) * 100) + '%' : '0%'\n    },\n    system: {\n      cacheSize: (typeof global.tradeQueryCache !== 'undefined') ? global.tradeQueryCache.size : 0,\n      totalRecordsTracked: global.performanceMetrics.queries.length,\n      oldestRecord: global.performanceMetrics.queries.length > 0 ? global.performanceMetrics.queries[0].date : 'none'\n    }\n  };\n\n  console.log('Performance Summary:', performanceSummary);\n\n  // Check for performance alerts\n  const alerts = [];\n  if (todayStats.totalQueries > 100) {\n    alerts.push('High query volume detected (>100 queries today)');\n  }\n  if (todayStats.totalQueries > 0 && todayStats.successfulQueries / todayStats.totalQueries < 0.9) {\n    alerts.push('Low success rate detected (<90%)');\n  }\n  if (todayStats.totalQueries > 10 && todayStats.cachedQueries / todayStats.totalQueries < 0.2) {\n    alerts.push('Low cache hit rate detected (<20%)');\n  }\n\n  // Generate recommendations\n  const recommendations = [];\n  if (todayStats.totalQueries > 50) {\n    recommendations.push('Consider adding database indexes for better performance');\n  }\n  if (performanceSummary.last24h.averageConfidence < 0.8) {\n    recommendations.push('Review and improve query standardization mappings');\n  }\n  if (performanceSummary.system.cacheSize > 80) {\n    recommendations.push('Cache is working well - consider increasing TTL');\n  }\n\n  // IMPORTANT: Return in the correct n8n format\n  return [{\n    json: {\n      performance: performanceSummary,\n      alerts: alerts,\n      currentQuery: queryMetric,\n      recommendations: recommendations,\n      timestamp: new Date().toISOString()\n    }\n  }];\n\n} catch (error) {\n  console.log('Performance monitoring error:', error.message);\n  \n  // Return error in correct format\n  return [{\n    json: {\n      error: error.message,\n      performance: {\n        today: { queries: 0, successRate: '0%', cacheHitRate: '0%' },\n        last24h: { totalQueries: 0, successRate: '0%' },\n        system: { cacheSize: 0, totalRecordsTracked: 0 }\n      },\n      alerts: ['Performance monitoring failed'],\n      timestamp: new Date().toISOString()\n    }\n  }];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        0
+      ],
+      "id": "0c5efcda-0dd3-42e3-8ed6-baa1f62302bf",
+      "name": "PERFORMANCE MONITORING"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "DYNAMIC SCHEMA DETECTION",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Parse Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DYNAMIC SCHEMA DETECTION": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PERFORMANCE MONITORING": {
+      "main": [
+        []
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        [
+          {
+            "node": "PERFORMANCE MONITORING",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "8fddc77d-63a9-4a73-b3e1-87a895d1ea37",
+  "meta": {
+    "instanceId": "46deee07b8ea6362f22ab400d029135649a4fa335a46967b1b6ed6964b6b86ce"
+  },
+  "id": "ygGBXAXaShdq6JoH",
+  "tags": [
+    {
+      "name": "victor-ai",
+      "id": "UywcfA2HMd8El3uc",
+      "createdAt": "2025-06-18T04:57:50.542Z",
+      "updatedAt": "2025-06-18T04:57:50.542Z"
+    }
+  ]
+}

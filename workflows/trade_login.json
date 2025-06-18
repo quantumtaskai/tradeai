@@ -1,0 +1,385 @@
+{
+  "name": "trade-login",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "login",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -700,
+        0
+      ],
+      "id": "baf165d2-7824-4c33-861a-62d4dd8aabd7",
+      "name": "Webhook",
+      "webhookId": "80a7f1aa-31cd-4984-989b-2f8238941c38"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the HTTP Request result\nconst httpResult = $input.first().json;\n\nconsole.log('Full HTTP Result:', JSON.stringify(httpResult, null, 2));\n\n// Since your input shows success: true, let's handle it directly\nif (httpResult && httpResult.success === true) {\n  return [{\n    json: {\n      success: true,\n      username: httpResult.username,\n      message: httpResult.message || \"Login successful\"\n    }\n  }];\n} else if (httpResult && httpResult.success === false) {\n  return [{\n    json: {\n      success: false,\n      message: httpResult.message || \"Invalid credentials\"\n    }\n  }];\n} else {\n  // Log what we actually received\n  console.log('Unexpected result structure:', httpResult);\n  return [{\n    json: {\n      success: false,\n      message: \"Authentication error - unexpected response\"\n    }\n  }];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -260,
+        0
+      ],
+      "id": "2711df8c-9857-446a-94c9-1b61b28387dc",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -40,
+        0
+      ],
+      "id": "c43ac809-9ac0-44a4-9af3-19c31dd8f0ab",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ymjnjwtigyiajxgyikhb.supabase.co/rest/v1/rpc/verify_user_password",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"input_username\": \"{{ $json.body.username }}\",\n  \"input_password\": \"{{ $json.body.password }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -480,
+        0
+      ],
+      "id": "21a36680-1274-430c-a2ca-6315c4a5eb32",
+      "name": "HTTP Request",
+      "credentials": {
+        "supabaseApi": {
+          "id": "TQTO4w7qMD6biDO6",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Enhanced Response Processing with Fallback Logic\nconst query = $input.first().json.body.query;\n\ntry {\n  // Get AI response from the chat model\n  const aiResponse = $input.first().json.content;\n  \n  console.log('Raw AI Response:', aiResponse);\n  \n  let parsed;\n  \n  // Try to parse the AI response\n  try {\n    // Clean the response - remove any markdown formatting\n    let cleanResponse = aiResponse.trim();\n    if (cleanResponse.startsWith('```json')) {\n      cleanResponse = cleanResponse.replace(/```json\\s*/, '').replace(/\\s*```$/, '');\n    }\n    if (cleanResponse.startsWith('```')) {\n      cleanResponse = cleanResponse.replace(/```\\s*/, '').replace(/\\s*```$/, '');\n    }\n    \n    parsed = JSON.parse(cleanResponse);\n  } catch (parseError) {\n    console.log('JSON parse failed, using fallback:', parseError.message);\n    throw new Error('AI parsing failed');\n  }\n  \n  // Validate the parsed result\n  if (!parsed || !parsed.table || !Array.isArray(parsed.filters)) {\n    throw new Error('Invalid AI response structure');\n  }\n  \n  // Ensure table is valid\n  const validTables = ['buyer', 'seller', 'gulfood', 'all'];\n  if (!validTables.includes(parsed.table)) {\n    parsed.table = 'all';\n  }\n  \n  // Clean and validate filters\n  parsed.filters = parsed.filters.filter(filter => \n    filter && \n    typeof filter === 'object' &&\n    filter.field && \n    filter.operator && \n    filter.value\n  );\n  \n  console.log('AI parsing successful:', parsed);\n  \n  return [{\n    json: {\n      success: true,\n      table: parsed.table,\n      filters: parsed.filters,\n      originalQuery: query,\n      source: 'ai',\n      timestamp: new Date().toISOString()\n    }\n  }];\n  \n} catch (error) {\n  console.log('AI parsing failed, using enhanced fallback:', error.message);\n  \n  // Enhanced fallback parsing logic\n  const lowerQuery = query.toLowerCase();\n  \n  // Determine table\n  let table = 'all';\n  if (lowerQuery.includes('buyer') && !lowerQuery.includes('seller')) {\n    table = 'buyer';\n  } else if (lowerQuery.includes('seller') && !lowerQuery.includes('buyer')) {\n    table = 'seller';\n  } else if (lowerQuery.includes('gulfood') || lowerQuery.includes('exhibitor')) {\n    table = 'gulfood';\n  }\n  \n  const filters = [];\n  \n  // Enhanced country mapping\n  const countryMap = {\n    'india': 'India',\n    'uk': 'United Kingdom',\n    'united kingdom': 'United Kingdom',\n    'britain': 'United Kingdom',\n    'usa': 'United States',\n    'united states': 'United States',\n    'america': 'United States',\n    'uae': 'UAE',\n    'emirates': 'UAE',\n    'china': 'China',\n    'germany': 'Germany',\n    'deutschland': 'Germany',\n    'france': 'France',\n    'italy': 'Italy',\n    'japan': 'Japan',\n    'canada': 'Canada',\n    'australia': 'Australia',\n    'singapore': 'Singapore',\n    'malaysia': 'Malaysia',\n    'poland': 'Poland',\n    'turkey': 'Turkey',\n    'pakistan': 'Pakistan',\n    'bangladesh': 'Bangladesh'\n  };\n  \n  // Check for countries\n  for (const [key, value] of Object.entries(countryMap)) {\n    if (lowerQuery.includes(key)) {\n      filters.push({ \n        field: 'country', \n        operator: 'ilike', \n        value: `%${value}%` \n      });\n      break;\n    }\n  }\n  \n  // Enhanced brand mapping\n  const brandMap = {\n    'unilever': 'Unilever',\n    'pg': 'P&G',\n    'p&g': 'P&G',\n    'procter': 'P&G',\n    'nestle': 'Nestle',\n    'pepsi': 'Pepsi',\n    'coca cola': 'Coca-Cola',\n    'coke': 'Coca-Cola',\n    'colgate': 'Colgate',\n    'reckitt': 'Reckitt Benckiser',\n    'dove': 'Dove',\n    'nivea': 'Nivea',\n    'kinder': 'Kinder',\n    'nutella': 'Nutella',\n    'mars': 'Mars',\n    'ferrero': 'Ferrero',\n    'johnson': 'Johnson & Johnson',\n    'oral-b': 'Oral-B'\n  };\n  \n  // Check for brands\n  for (const [key, value] of Object.entries(brandMap)) {\n    if (lowerQuery.includes(key)) {\n      filters.push({ \n        field: 'brands', \n        operator: 'ilike', \n        value: `%${value}%` \n      });\n      break;\n    }\n  }\n  \n  // Enhanced category mapping\n  const categoryMap = {\n    'fmcg': 'FMCG',\n    'cosmetic': 'Cosmetic',\n    'beauty': 'Cosmetic',\n    'personal care': 'Personal Care',\n    'food': 'Food',\n    'beverage': 'Beverage',\n    'drink': 'Beverage',\n    'pharma': 'Pharmaceutical',\n    'pharmaceutical': 'Pharmaceutical',\n    'medicine': 'Pharmaceutical',\n    'household': 'Household',\n    'toiletries': 'Toiletries',\n    'cleaning': 'Household'\n  };\n  \n  // Check for categories\n  for (const [key, value] of Object.entries(categoryMap)) {\n    if (lowerQuery.includes(key)) {\n      filters.push({ \n        field: 'category', \n        operator: 'ilike', \n        value: `%${value}%` \n      });\n      break;\n    }\n  }\n  \n  return [{\n    json: {\n      success: true,\n      table: table,\n      filters: filters,\n      originalQuery: query,\n      source: 'fallback',\n      timestamp: new Date().toISOString(),\n      error: error.message\n    }\n  }];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        116,
+        360
+      ],
+      "id": "d04ae275-a66e-4406-9ba9-b9e9e8956bba",
+      "name": "Enhanced Response Processor"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        556,
+        260
+      ],
+      "id": "be576540-1a5c-47b1-b36d-5cfe18594409",
+      "name": "Success Response"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": false, \"error\": \"Invalid input. Query is required and must be less than 500 characters.\", \"timestamp\": new Date().toISOString() } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -182,
+        660
+      ],
+      "id": "d12b90e3-ef6f-43e9-ae1c-c9598ffa272c",
+      "name": "Validation Error Response"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": false, \"error\": \"Query processing failed. Please try again or use simpler terms.\", \"originalQuery\": $json.originalQuery || 'unknown', \"timestamp\": new Date().toISOString() } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        556,
+        460
+      ],
+      "id": "00ee6311-1149-4b2e-960d-f48a751fe69c",
+      "name": "Processing Error Response"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "parse-query",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -700,
+        510
+      ],
+      "id": "d3062b24-ff11-429f-b432-b57ee3e5ad61",
+      "name": "Webhook1",
+      "webhookId": "db35f2bf-988f-4491-baab-364e14cf2e3b"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "08e8b676-a62d-4ec6-9c5a-6fb6911f8c2e",
+              "leftValue": "={{ $json.body.query }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -480,
+        510
+      ],
+      "id": "026fc304-1059-4cf0-93c9-258fd5f22a03",
+      "name": "Input Validator"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -172,
+        480
+      ],
+      "id": "fe2d66b9-9191-42ff-8007-b14f9d11811f",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "kZ5UWLXDWB2Em4r6",
+          "name": "OpenAi account testing"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.query }}",
+        "options": {
+          "systemMessage": "You are an AI Trade Intelligence Query Parser for a global B2B database with 430+ companies across 75+ countries.\n\nDATABASE STRUCTURE:\n- **buyer**: 351 companies seeking to purchase products (importers, distributors, retailers)\n- **seller**: 49 companies offering products for sale (manufacturers, exporters)  \n- **gulfood**: 30 international exhibitors from Gulfood trade show\n\nFIELD MAPPING:\n- buyer/seller: buyer|seller, country, phone_number, mail_id, website, category, brands\n- gulfood: company_name, address, phone_number, mail_id, website\n\nTOP COUNTRIES (by frequency):\n- India (83), USA (76), UAE (24), United Kingdom (11), Poland (6), Turkey (4)\n- Others: Australia, Germany, Malaysia, Singapore, Pakistan, Canada, etc.\n\nMAIN CATEGORIES:\n- FMCG (Fast Moving Consumer Goods) - most common\n- Cosmetics & Personal Care\n- Food & Beverage  \n- Pharmaceuticals\n- Household Products\n- Toiletries\n\nMAJOR BRANDS (frequently mentioned):\n- Unilever, P&G, Nestle, Reckitt Benckiser, Colgate-Palmolive\n- Kinder, Nutella, Pepsi, Coca-Cola, Dove, Nivea\n- Mars, Ferrero, Oral-B, Johnson & Johnson\n\nCOUNTRY ALIASES TO RECOGNIZE:\n- UK/Britain → \"United Kingdom\"\n- USA/America → \"United States\"  \n- UAE/Emirates → \"UAE\"\n- Germany/Deutschland → \"Germany\"\n\nQUERY PARSING RULES:\n1. **Table Selection:**\n   - \"buyers/importers/purchase\" → \"buyer\"\n   - \"sellers/exporters/manufacturers\" → \"seller\"  \n   - \"gulfood/exhibitors\" → \"gulfood\"\n   - General/mixed queries → \"all\"\n\n2. **Filter Construction:**\n   - Country: {\"field\": \"country\", \"operator\": \"ilike\", \"value\": \"%CountryName%\"}\n   - Brand: {\"field\": \"brands\", \"operator\": \"ilike\", \"value\": \"%BrandName%\"}\n   - Category: {\"field\": \"category\", \"operator\": \"ilike\", \"value\": \"%CategoryName%\"}\n\n3. **Multi-criteria Handling:**\n   - Multiple filters = array of filter objects\n   - Use partial matching with % wildcards\n   - Case-insensitive matching via \"ilike\"\n\nRESPONSE FORMAT (JSON only):\n{\n  \"table\": \"buyer|seller|gulfood|all\",\n  \"filters\": [\n    {\"field\": \"country\", \"operator\": \"ilike\", \"value\": \"%India%\"},\n    {\"field\": \"brands\", \"operator\": \"ilike\", \"value\": \"%Unilever%\"}\n  ]\n}\n\nEXAMPLES:\n\"find buyers from india\" → {\"table\": \"buyer\", \"filters\": [{\"field\": \"country\", \"operator\": \"ilike\", \"value\": \"%India%\"}]}\n\n\"unilever sellers\" → {\"table\": \"seller\", \"filters\": [{\"field\": \"brands\", \"operator\": \"ilike\", \"value\": \"%Unilever%\"}]}\n\n\"cosmetic companies from uk\" → {\"table\": \"all\", \"filters\": [{\"field\": \"category\", \"operator\": \"ilike\", \"value\": \"%Cosmetic%\"}, {\"field\": \"country\", \"operator\": \"ilike\", \"value\": \"%United Kingdom%\"}]}\n\n\"pepsi distributors in uae\" → {\"table\": \"buyer\", \"filters\": [{\"field\": \"brands\", \"operator\": \"ilike\", \"value\": \"%Pepsi%\"}, {\"field\": \"country\", \"operator\": \"ilike\", \"value\": \"%UAE%\"}]}\n\n\"gulfood exhibitors\" → {\"table\": \"gulfood\", \"filters\": []}\n\nIMPORTANT: Return ONLY the JSON object, no explanations or markdown."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -260,
+        260
+      ],
+      "id": "df5b9643-11d4-4919-9121-36b67468dbb0",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "fdb8e01b-e7ae-4001-aa4f-56fe4f848705",
+              "leftValue": "",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        336,
+        360
+      ],
+      "id": "72576a93-5e46-4b97-b798-8d3c7f773a52",
+      "name": "Success Validator"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enhanced Response Processor": {
+      "main": [
+        [
+          {
+            "node": "Success Validator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Input Validator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input Validator": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Validation Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Enhanced Response Processor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Success Validator": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Processing Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "63f203da-ed7a-451d-96b1-a9e7c89168ae",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "46deee07b8ea6362f22ab400d029135649a4fa335a46967b1b6ed6964b6b86ce"
+  },
+  "id": "N99gKTt4pBYS83E4",
+  "tags": []
+}
